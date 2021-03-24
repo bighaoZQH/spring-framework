@@ -1113,12 +1113,14 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
 	public void validate() throws BeanDefinitionValidationException {
+		// 如果lookup-method 或 replace-method 与 工厂方法并存，则抛出异常
 		if (hasMethodOverrides() && getFactoryMethodName() != null) {
 			throw new BeanDefinitionValidationException(
 					"Cannot combine factory method with container-generated method overrides: " +
 					"the factory method must create the concrete bean instance.");
 		}
 		if (hasBeanClass()) {
+			// 校验 lookup-method 和 replace-method 配置，Spring将这两个配置统称为 override method
 			prepareMethodOverrides();
 		}
 	}
@@ -1127,6 +1129,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * Validate and prepare the method overrides defined for this bean.
 	 * Checks for existence of a method with the specified name.
 	 * @throws BeanDefinitionValidationException in case of validation failure
+	 *
+	 * 校验 lookup-method 和 replace-method 配置，Spring 将这两个配置统称为 override method
 	 */
 	public void prepareMethodOverrides() throws BeanDefinitionValidationException {
 		// Check that lookup methods exist and determine their overloaded status.
@@ -1141,14 +1145,18 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * marking it as not overloaded if none found.
 	 * @param mo the MethodOverride object to validate
 	 * @throws BeanDefinitionValidationException in case of validation failure
+	 *
+	 * 校验和解析 lookup-method 和 replace-method 配置，Spring将这两个配置统称为 override method
 	 */
 	protected void prepareMethodOverride(MethodOverride mo) throws BeanDefinitionValidationException {
 		int count = ClassUtils.getMethodCountForName(getBeanClass(), mo.getMethodName());
+		// 如果count为0 表示没有这个方法,则抛出异常
 		if (count == 0) {
 			throw new BeanDefinitionValidationException(
 					"Invalid method override: no method with name '" + mo.getMethodName() +
 					"' on class [" + getBeanClassName() + "]");
 		}
+		// 如果count为1 表示这个方法并没有被重写，标记为not overload, 以避免参数类型检查的开销
 		else if (count == 1) {
 			// Mark override as not overloaded, to avoid the overhead of arg type checking.
 			mo.setOverloaded(false);

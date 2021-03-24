@@ -90,6 +90,11 @@ abstract class ConfigurationClassUtils {
 		}
 
 		AnnotationMetadata metadata;
+		/**
+		 * beanDef instanceof AnnotatedBeanDefinition 他表示是加了注解的bean,
+		 * spring容器在初始化时内部的bean是被解析成了RootBeanDefinition
+		 * 因此在我们这个例子中，只有我们自己的配置类才会进来
+		 */
 		if (beanDef instanceof AnnotatedBeanDefinition &&
 				className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
 			// Can reuse the pre-parsed metadata from the given BeanDefinition...
@@ -105,6 +110,8 @@ abstract class ConfigurationClassUtils {
 					EventListenerFactory.class.isAssignableFrom(beanClass)) {
 				return false;
 			}
+			// 如果BeanDefinition 是 AbstractBeanDefinition的实例,并且beanDef 有 beanClass 属性存在
+			// 则实例化StandardAnnotationMetadata
 			metadata = AnnotationMetadata.introspect(beanClass);
 		}
 		else {
@@ -122,9 +129,11 @@ abstract class ConfigurationClassUtils {
 		}
 
 		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());
+		// 如果标注了@Configuration，则设置该配置类为full类型的配置类
 		if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
+		// lite类型.. 如果有@Import @Componet @ImportResource @ComponentScan @Bean
 		else if (config != null || isConfigurationCandidate(metadata)) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
@@ -150,11 +159,17 @@ abstract class ConfigurationClassUtils {
 	 */
 	public static boolean isConfigurationCandidate(AnnotationMetadata metadata) {
 		// Do not consider an interface or an annotation...
+		// 如果是个接口直接返回false
 		if (metadata.isInterface()) {
 			return false;
 		}
 
 		// Any of the typical annotations found?
+		/**
+		 * 如果没有加@Configuration注解，spring就认为该类是一个部分注解类
+		 * 循环判断是否加了以下的注解
+		 * candidateIndicators ==> Import Componet ImportResource ComponentScan
+		 */
 		for (String indicator : candidateIndicators) {
 			if (metadata.isAnnotated(indicator)) {
 				return true;
@@ -163,6 +178,7 @@ abstract class ConfigurationClassUtils {
 
 		// Finally, let's look for @Bean methods...
 		try {
+			// 判断方法是否有加@Bean注解
 			return metadata.hasAnnotatedMethods(Bean.class.getName());
 		}
 		catch (Throwable ex) {

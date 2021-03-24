@@ -245,42 +245,72 @@ public class AnnotatedBeanDefinitionReader {
 	 * @param customizers one or more callbacks for customizing the factory's
 	 * {@link BeanDefinition}, e.g. setting a lazy-init or primary flag
 	 * @since 5.0
+	 *
+	 * 将传入的bean注册到工厂中，并解析该bean的类注解，作为bean的元数据。
+	 * 意思就是传入的bean，在类上面我们通常会标注一些描述bean的注解，
+	 * spring会通过解析这些注解，生成BeanDefinition，然后将该bd注册到工厂中
 	 */
 	private <T> void doRegisterBean(Class<T> beanClass, @Nullable String name,
 			@Nullable Class<? extends Annotation>[] qualifiers, @Nullable Supplier<T> supplier,
 			@Nullable BeanDefinitionCustomizer[] customizers) {
 
+		/**
+		 * 根据指定的bean创建一个AnnotatedGenericBeanDefinition
+		 * AnnotatedGenericBeanDefinition包含了类的其他信息,比如一些元信息scope，lazy等等
+		 */
 		AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(beanClass);
+		// 判断类的装配条件是否跳过注册 @Conditional注解可以用于指定类的装配条件，springboot的自动配置就是用到了这个注解
 		if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
 			return;
 		}
 
 		abd.setInstanceSupplier(supplier);
+
+		// 解析bean的作用域，默认singleton
 		ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
 		abd.setScope(scopeMetadata.getScopeName());
+		// 生成beanName 默认通过beanNameGenerator 类首字母小写
 		String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
 
+		/**
+		 * 处理类当中的通用注解，分析源码可以知道他主要处理 Lazy DependsOn Primary Role等等注解
+		 * 处理完成之后processCommonDefinitionAnnotations中依然是把他添加到数据结构当中
+		 */
 		AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+		/**
+		 * 如果在向容器注册注解Bean定义时，使用了额外的限定符注解 则解析限定符注解
+		 * 主要是配置的关于autowiring自动依赖注入装配的限定条件，即@Qualifier注解
+		 *
+		 * 当然qualifiers的类型是Annotation数组，因此理论上可以传入任意的注解，
+		 * 所以spring来依次循环判断qualifiers当中是否包含了Primary，Lazyd
+		 */
 		if (qualifiers != null) {
 			for (Class<? extends Annotation> qualifier : qualifiers) {
+				// 如果配置了@Primary注解，设置该Bean为autowiring自动依赖注入装配时的首选
 				if (Primary.class == qualifier) {
 					abd.setPrimary(true);
 				}
+				// 如果配置了@Lazy注解，则设置该Bean为非延迟初始化
 				else if (Lazy.class == qualifier) {
 					abd.setLazyInit(true);
 				}
 				else {
+					// 走到这里主要是@Qualifier注解，
+					// 作用: 一个接口有多个实现类，@Qualifier指明@Autowired具体注入哪个实现类
 					abd.addQualifier(new AutowireCandidateQualifier(qualifier));
 				}
 			}
 		}
+		// 自定义注解，不重要
 		if (customizers != null) {
 			for (BeanDefinitionCustomizer customizer : customizers) {
 				customizer.customize(abd);
 			}
 		}
 
+		// 这个BeanDefinitionHolder是一个封装了BeanName 、 bean别名 和 BeanDefinition的对象
 		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+		// 根据@Scope配置的作用域，创建相应的代理对象,ScopedProxyMode 这个知识点需要结合web去理解
 		definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 		BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
 	}

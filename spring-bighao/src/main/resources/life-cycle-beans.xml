@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- 测试bean生命周期 - 第三阶段 - 实例化后 - 禁止属性填入 -->
+	<bean id="lifeCycleTracker" class="org.bighao.spring.beanlifecycle.component.LifeCycleTracker" init-method="xmlInitMethod">
+		<property name="trackerName" value="by xml"/>
+	</bean>
+
+	<bean id="trackerHolder" class="org.bighao.spring.beanlifecycle.component.TrackerHolder">
+		<!-- 通过 XML 元素配置 -->
+		<property name="id" value="1"/>
+		<property name="desc" value="tracker holder"/>
+		<property name="propertyMap">
+			<map>
+				<entry key="name1" value="a"/>
+				<entry key="name2" value="b"/>
+			</map>
+		</property>
+	</bean>
+
+</beans>

@@ -306,12 +306,21 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * Scan the class path for candidate components.
 	 * @param basePackage the package to check for annotated classes
 	 * @return a corresponding Set of autodetected bean definitions
+	 *
+	 * 扫描给定类路径的包 通过ASM实现
 	 */
 	public Set<BeanDefinition> findCandidateComponents(String basePackage) {
+		// 如果添加了spring-context-indexer的依赖
 		if (this.componentsIndex != null && indexSupportsIncludeFilters()) {
+			/**
+			 * 虽然类路径扫描非常快，但是Spring内部存在大量的类，添加此依赖，
+			 * 可以通过在编译时创建候选对象的静态列表来提高大型应用程序的启动性能。
+			 * 在此模式下，作为组件扫描目标的所有模块都必须使用此机制。
+			 */
 			return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
 		}
 		else {
+			// 默认是执行这里
 			return scanCandidateComponents(basePackage);
 		}
 	}
@@ -417,6 +426,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		try {
 			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
+			// asm 读取class文件
 			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
@@ -427,13 +437,16 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 				if (resource.isReadable()) {
 					try {
 						MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+						// 判断是否需要被解析
 						if (isCandidateComponent(metadataReader)) {
+							// 把扫描出来的bean解析成ScannedGenericBeanDefinition
 							ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 							sbd.setSource(resource);
 							if (isCandidateComponent(sbd)) {
 								if (debugEnabled) {
 									logger.debug("Identified candidate component class: " + resource);
 								}
+								// 放入candidates中
 								candidates.add(sbd);
 							}
 							else {
@@ -486,11 +499,13 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * @return whether the class qualifies as a candidate component
 	 */
 	protected boolean isCandidateComponent(MetadataReader metadataReader) throws IOException {
+		// 判断这个类是否在excludeFilters中，是就返回false
 		for (TypeFilter tf : this.excludeFilters) {
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return false;
 			}
 		}
+		// 如果是includeFilters就返回isConditionMatch(metadataReader) 判断是否满足@Conditional的装配条件
 		for (TypeFilter tf : this.includeFilters) {
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return isConditionMatch(metadataReader);

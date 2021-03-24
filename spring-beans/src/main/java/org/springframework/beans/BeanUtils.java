@@ -263,6 +263,9 @@ public abstract class BeanUtils {
 	 * @param clazz the class to check
 	 * @since 5.0
 	 * @see <a href="https://kotlinlang.org/docs/reference/classes.html#constructors">Kotlin docs</a>
+	 *
+	 * 返回所提供类的主构造函数。对于Kotlin类，这个返回与Kotlin主构造函数对应的Java构造函数
+	 * 否则对于非Kotlin类，都返回null
 	 */
 	@Nullable
 	public static <T> Constructor<T> findPrimaryConstructor(Class<T> clazz) {

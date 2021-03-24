@@ -491,11 +491,14 @@ public class DispatcherServlet extends FrameworkServlet {
 	/**
 	 * Initialize the strategy objects that this servlet uses.
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
+	 *
+	 * 初始化SpringMVC 九大组件
 	 */
 	protected void initStrategies(ApplicationContext context) {
 		initMultipartResolver(context);
 		initLocaleResolver(context);
 		initThemeResolver(context);
+		// 初始化handlerMapping
 		initHandlerMappings(context);
 		initHandlerAdapters(context);
 		initHandlerExceptionResolvers(context);
@@ -1030,16 +1033,21 @@ public class DispatcherServlet extends FrameworkServlet {
 
 			try {
 				processedRequest = checkMultipart(request);
+				// 如果是文件上传请求，processedRequest就不等于原来的request
 				multipartRequestParsed = (processedRequest != request);
 
 				// Determine handler for the current request.
+				// 2.通过HandlerMapping（处理器映射器）来查找处理器 (也就是根据当前请求来找到哪个类能来处理)
+				// 3.并返回 处理器执行链
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
+					// 如果找不到处理器能处理这个请求就404，或 抛异常
 					noHandlerFound(processedRequest, response);
 					return;
 				}
 
 				// Determine handler adapter for the current request.
+				// 4.拿到当前请求的处理器适配器(反射工具)
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
@@ -1052,18 +1060,22 @@ public class DispatcherServlet extends FrameworkServlet {
 					}
 				}
 
+				// 调用拦截器的PreHandle方法
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
 
 				// Actually invoke the handler.
+				// 5.执行处理器方法 6.返回ModelAndView对象
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
+				// 如果是异步的请求，直接返回
 				if (asyncManager.isConcurrentHandlingStarted()) {
 					return;
 				}
 
 				applyDefaultViewName(processedRequest, mv);
+				// 5.调用拦截器的postHandle方法
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
@@ -1074,6 +1086,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				// making them available for @ExceptionHandler methods and other scenarios.
 				dispatchException = new NestedServletException("Handler dispatch failed", err);
 			}
+			// 处理modelAndView，进行页面渲染
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
@@ -1135,6 +1148,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		// Did the handler return a view to render?
 		if (mv != null && !mv.wasCleared()) {
+			// 视图解析 和 渲染视图
 			render(mv, request, response);
 			if (errorView) {
 				WebUtils.clearErrorRequestAttributes(request);
@@ -1250,6 +1264,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	@Nullable
 	protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
 		if (this.handlerMappings != null) {
+			// HandlerMapping里保存了每一个映射器能处理哪些方法的映射信息
 			for (HandlerMapping mapping : this.handlerMappings) {
 				HandlerExecutionChain handler = mapping.getHandler(request);
 				if (handler != null) {
@@ -1275,6 +1290,7 @@ public class DispatcherServlet extends FrameworkServlet {
 					new ServletServerHttpRequest(request).getHeaders());
 		}
 		else {
+			// 重定向到错误页面
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		}
 	}
@@ -1287,6 +1303,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	protected HandlerAdapter getHandlerAdapter(Object handler) throws ServletException {
 		if (this.handlerAdapters != null) {
 			for (HandlerAdapter adapter : this.handlerAdapters) {
+				// SimpleControllerHandlerAdapter判断是不是Controller 通过实现Controller接口的
 				if (adapter.supports(handler)) {
 					return adapter;
 				}
@@ -1364,9 +1381,11 @@ public class DispatcherServlet extends FrameworkServlet {
 		response.setLocale(locale);
 
 		View view;
+		// 视图名
 		String viewName = mv.getViewName();
 		if (viewName != null) {
 			// We need to resolve the view name.
+			// 拿到view
 			view = resolveViewName(viewName, mv.getModelInternal(), locale, request);
 			if (view == null) {
 				throw new ServletException("Could not resolve view with name '" + mv.getViewName() +

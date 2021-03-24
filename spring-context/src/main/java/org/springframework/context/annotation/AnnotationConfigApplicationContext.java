@@ -63,8 +63,16 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	/**
 	 * Create a new AnnotationConfigApplicationContext that needs to be populated
 	 * through {@link #register} calls and then manually {@linkplain #refresh refreshed}.
+	 *
+	 * 在自己的构造方法中初始一个 BeanDefinition读取器 和 BeanDefinition扫描器
+	 *
+	 * reader初始化过程中，spring自己注册了6个内部BeanDefinition，用于处理注解驱动的后置处理器
+	 *
+	 * 需要注意的是，这里的scanner在spring内部并没有被使用，
+	 * 该scanner仅仅是为了对外提供的扩展，让程序员可以自己通过context.scan();去扫描bean
 	 */
 	public AnnotationConfigApplicationContext() {
+		// super(); java基础。。 这边会有一个隐含的super()，调用父类的无参构造器
 		StartupStep createAnnotatedBeanDefReader = this.getApplicationStartup().start("spring.context.annotated-bean-reader.create");
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 		createAnnotatedBeanDefReader.end();
@@ -86,10 +94,13 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * from the given component classes and automatically refreshing the context.
 	 * @param componentClasses one or more component classes &mdash; for example,
 	 * {@link Configuration @Configuration} classes
+	 *
+	 * 创建一个新的spring环境上下文，并从给定的组件类中得到相关的beanDefinitions，并自动刷新上下文
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
 		this();
 		register(componentClasses);
+		// 初始化spring的环境
 		refresh();
 	}
 
@@ -159,6 +170,9 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * {@link Configuration @Configuration} classes
 	 * @see #scan(String...)
 	 * @see #refresh()
+	 *
+	 * 注册一个 或 多个 组件类
+	 * 注册的意思是 读取并解析bean的元数据，生成beanDefinition放入bean工厂的一个map里
 	 */
 	@Override
 	public void register(Class<?>... componentClasses) {

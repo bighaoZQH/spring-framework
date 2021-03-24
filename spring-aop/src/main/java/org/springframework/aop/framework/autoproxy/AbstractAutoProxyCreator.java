@@ -306,6 +306,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 */
 	protected Object getCacheKey(Class<?> beanClass, @Nullable String beanName) {
 		if (StringUtils.hasLength(beanName)) {
+			// 判断是否是FactoryBean
 			return (FactoryBean.class.isAssignableFrom(beanClass) ?
 					BeanFactory.FACTORY_BEAN_PREFIX + beanName : beanName);
 		}
@@ -325,6 +326,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
+		// 对于实现了Advice，Advisor，AopInfrastructureBean接口的bean，
+		// 都认为是spring aop的基础框架类，不能对他们创建代理对象，
+		// 同时子类也可以覆盖shouldSkip方法来指定不对哪些bean进行代理
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
@@ -333,16 +337,22 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			return bean;
 		}
 
+		/** 上面就是判断是否要进行AOP代理 */
+
 		// Create proxy if we have advice.
+		// 调用getAdvicesAndAdvisorsForBean（)方法判断当前bean是否需要进行代理，若需要则返回满足条件的Advice或者Advisor集合。
+		// 根据getAdvicesAndAdvisorsForBean()方法的具体实现的不同，AbstractAutoProxyCreator又分成了两类自动代理机制
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			// 调用createProxy方法创建代理对象
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
 			this.proxyTypes.put(cacheKey, proxy.getClass());
 			return proxy;
 		}
 
+		// 将创建的代理的key缓存起来，避免重复创建
 		this.advisedBeans.put(cacheKey, Boolean.FALSE);
 		return bean;
 	}
@@ -436,9 +446,11 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) this.beanFactory, beanName, beanClass);
 		}
 
+		// 创建代理工厂，并复制当前类的相关配置
 		ProxyFactory proxyFactory = new ProxyFactory();
 		proxyFactory.copyFrom(this);
 
+		// 然后检查当前类是否有实现基于类的代理，还是基于接口，以此来决定是否采用cglib来创建代理对象
 		if (!proxyFactory.isProxyTargetClass()) {
 			if (shouldProxyTargetClass(beanClass, beanName)) {
 				proxyFactory.setProxyTargetClass(true);
@@ -448,9 +460,18 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			}
 		}
 
+		/**
+		 * 整理合并Advisor，这里AbstractAutoProxyCreator定义了属性interceptorNames用于设置拦截器，
+		 * 同时子类通过getAdvicesAndAdvisorsForBean()方法也可以返回一组Advisor，
+		 * buildAdvisors（）方法就是整理合并这些切面。至于调用的先后顺序，
+		 * 通过applyCommonInterceptorsFirst参数可以进行设置，
+		 * 若applyCommonInterceptorsFirst为true，
+		 * interceptorNames属性指定的Advisor优先调用。默认为true；
+		 */
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
 		proxyFactory.addAdvisors(advisors);
 		proxyFactory.setTargetSource(targetSource);
+		// 通过customizeProxyFactory()方法，在正式执行代理之前，子类可以对proxyFactory进行设置更改
 		customizeProxyFactory(proxyFactory);
 
 		proxyFactory.setFrozen(this.freezeProxy);
@@ -458,6 +479,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			proxyFactory.setPreFiltered(true);
 		}
 
+		// 最后调用proxyFactory.getProxy()方法返回代理对象
 		return proxyFactory.getProxy(getProxyClassLoader());
 	}
 
