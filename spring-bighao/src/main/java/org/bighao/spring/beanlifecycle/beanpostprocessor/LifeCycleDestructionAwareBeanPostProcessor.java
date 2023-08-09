@@ -14,7 +14,7 @@ public class LifeCycleDestructionAwareBeanPostProcessor implements DestructionAw
 
 	@Override
 	public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
-		System.out.println(beanName + "即将销毁");
+		System.out.println(bean + "即将销毁，进行自定义销毁逻辑===");
 	}
 
 }

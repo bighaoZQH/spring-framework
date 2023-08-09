@@ -79,6 +79,11 @@ final class PostProcessorRegistrationDelegate {
 	 * 	1.BeanDefinitionRegistryPostProcessor优先比BeanFactoryPostProcessor执行
 	 * 	2.手动add添加的 比 spring内部添加的 优先执行，遵守第一条
 	 * 	3.通过以上的处理器新扫描出来的最后执行，遵守第一条
+	 *
+	 * 二者区别：
+	 * BeanFactoryPostProcessor和BeanDefinitionRegistryPostProcessor 都是spring bean工厂的后置处理器，但是两个类的侧重点不一样，
+	 * BeanDefinitionRegistryPostProcessor 侧重于创建自定义的bd 而 BeanFactoryPostProcessor侧重于对已有bd属性的修改。
+	 * BeanDefinitionRegistryPostProcessor 先于 BeanFactoryPostProcessor 执行
 	 */
 	public static void invokeBeanFactoryPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {

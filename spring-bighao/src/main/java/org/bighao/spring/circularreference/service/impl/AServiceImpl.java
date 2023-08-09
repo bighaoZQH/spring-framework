@@ -11,10 +11,17 @@ import org.springframework.stereotype.Service;
  * @date 2021/2/26 9:24
  */
 @Service
+//@Scope("PROTOTYPE")
 public class AServiceImpl implements AService {
 
 	@Autowired
 	private BService bService;
+
+	// 构造循环依赖是抛异常的
+	/*@Autowired
+	public AServiceImpl(BService bService) {
+		this.bService = bService;
+	}*/
 
 	@Override
 	public void print() {

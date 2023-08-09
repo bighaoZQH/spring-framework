@@ -255,7 +255,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				}
 				/**
 				 * 将beanName添加到singletonsCurrentlyInCreation这样一个set集合中
-				 * 表示beanName对应的bean正在创建中
+				 * 表示beanName对应的bean正在创建中，防止重复初始化，主要是为了防止构造注入的循环依赖
 				 */
 				beforeSingletonCreation(beanName);
 				boolean newSingleton = false;

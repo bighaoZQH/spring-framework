@@ -271,7 +271,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 
 		// 给全配置类产生cglib代理
-		// 为什么需要产生cglib代理？
+		// 为什么需要产生cglib代理？ 重复调用@Bean方法不用重复注入IOC容器
 		enhanceConfigurationClasses(beanFactory);
 		// 给bean工厂增加一个ImportAwareBeanPostProcessor后置处理器，用于给代理类注入beanFactory
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
@@ -522,6 +522,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 		@Override
 		public Object postProcessBeforeInitialization(Object bean, String beanName) {
+			// 回调ImportAware，但需要存在于imports集合中，也就是光实现接口还不够，还需要@Import的支持
 			if (bean instanceof ImportAware) {
 				ImportRegistry ir = this.beanFactory.getBean(IMPORT_REGISTRY_BEAN_NAME, ImportRegistry.class);
 				AnnotationMetadata importingClass = ir.getImportingClassFor(ClassUtils.getUserClass(bean).getName());

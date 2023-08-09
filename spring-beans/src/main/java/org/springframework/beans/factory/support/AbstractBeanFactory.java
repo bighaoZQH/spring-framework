@@ -267,6 +267,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Eagerly check singleton cache for manually registered singletons.
 		/**
 		 * 看是否命中缓存
+		 * 有三级缓存
+		 * 如果bean已经完全创建好了，会在一级缓存中命中。
+		 *
+		 * 如果bean是循环依赖的情况，即使bean没有被创建完成，但只要实例化了，就可以在这里取到一个早期对象
+		 * 如果循环依赖的情况，bean没有没实例化，这里没有取到早期对象，说明是构造注入的循环依赖，或者是原型的循环依赖，这在spring中是不被允许的
 		 *
 		 * 这个方法在初始化的时候会调用，在getBean的时候也会调用
 		 * 为什么需要这么做呢？
@@ -308,7 +313,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		else {
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
-			// 原型模式 不应 循环依赖，若发生，则直接抛出异常
+			/**
+			 * 原型模式 不应 循环依赖，若发生，则直接抛出异常
+			 * 在创建过程中会把beanName存入一个ThreadLocal，用来记录当前线程正在创建的原型bean，
+			 * 比如A创建的时候存入了，再获取B，发现B依赖了A，再获取A，发现存在这个threadLocal中，就抛异常。
+			 * 为什么是ThreadLocal？，因为是原型模式嘛，多个线程都是单独创建自己的原型bean
+			 */
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
@@ -416,13 +426,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					// 原型模式(Prototype)是每次都会创建一个新的对象
 					Object prototypeInstance = null;
 					try {
-						// 回调beforePrototypeCreation方法，默认的功能是注册当前创建的原型对象
+						// 将当前线程正在创建的原型beanName存入这个ThreadLocal，后面用于判断原型的循环依赖
 						beforePrototypeCreation(beanName);
 						// 创建指定Bean对象实例
 						prototypeInstance = createBean(beanName, mbd, args);
 					}
 					finally {
-						// 回调afterPrototypeCreation方法，默认的功能告诉IOC容器指定Bean的原型对象不再创建
+						// 创建完成，从threadLocal中移除正在创建的原型beanName
 						afterPrototypeCreation(beanName);
 					}
 					// 获取给定Bean的实例对象
@@ -1253,6 +1263,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected void beforePrototypeCreation(String beanName) {
 		Object curVal = this.prototypesCurrentlyInCreation.get();
 		if (curVal == null) {
+			// 将当前线程正在创建的原型beanName存入这个ThreadLocal，后面用于判断原型的循环依赖
 			this.prototypesCurrentlyInCreation.set(beanName);
 		}
 		else if (curVal instanceof String) {

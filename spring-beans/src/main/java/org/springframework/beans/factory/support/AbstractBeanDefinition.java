@@ -363,6 +363,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * Apply the provided default values to this bean.
 	 * @param defaults the default settings to apply
 	 * @since 2.5
+	 *
+	 * 设置bean的默认属性
 	 */
 	public void applyDefaults(BeanDefinitionDefaults defaults) {
 		Boolean lazyInit = defaults.getLazyInit();

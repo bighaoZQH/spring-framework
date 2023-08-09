@@ -293,7 +293,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 	/**
 	 * 1.遍历扫描方法上标注了 @PostConstruct  和 @PreDestroy 注解的类
 	 * 2.遍历扫描方法上标注了 @Resource 注解的类
-	 * 注意到, 这里只进行了扫描转换工作, 并没有进行属性注入工作
+	 * 注意 这里只进行了扫描转换工作, 并没有进行属性注入工作
 	 */
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {

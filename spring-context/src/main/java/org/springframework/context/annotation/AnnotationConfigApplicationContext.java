@@ -65,6 +65,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * through {@link #register} calls and then manually {@linkplain #refresh refreshed}.
 	 *
 	 * 在自己的构造方法中初始一个 BeanDefinition读取器 和 BeanDefinition扫描器
+	 * 创建了默认的BeanFactory
 	 *
 	 * reader初始化过程中，spring自己注册了6个内部BeanDefinition，用于处理注解驱动的后置处理器
 	 *

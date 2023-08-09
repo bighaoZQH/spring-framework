@@ -3,6 +3,7 @@ package org.bighao.spring.circularreference.service.impl;
 import org.bighao.spring.circularreference.service.AService;
 import org.bighao.spring.circularreference.service.BService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 /**
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
  * @date 2021/2/26 9:24
  */
 @Service
+//@Scope("PROTOTYPE")
 public class BServiceImpl implements BService {
 
 	/**
@@ -29,6 +31,11 @@ public class BServiceImpl implements BService {
 
 	@Autowired
 	private AService aService;
+
+	/*@Autowired
+	public BServiceImpl(AService aService) {
+		this.aService = aService;
+	}*/
 
 	@Override
 	public void print() {

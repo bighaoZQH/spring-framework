@@ -1019,6 +1019,17 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * @param request current HTTP request
 	 * @param response current HTTP response
 	 * @throws Exception in case of any kind of processing failure
+	 *
+	 *
+	 * 1.根据请求通过HandlerMapping（处理器映射器）来查找得到处理器执行链 (包括处理器对象和处理器拦截器)一并返回给DispatcherServlet
+	 * 	 如果找不到就返回404
+	 * 2.根据Handler获取 处理器适配器HandlerAdapter
+	 * 3.调用拦截器的PreHandle方法
+	 * 4.通过HandlerAdapter执行处理器方法 并 返回ModelAndView对象
+	 * 5.如果是异步的请求，直接返回，否则调用拦截器的postHandle方法
+	 * 6.DispatcherServlet将ModelAndView传给ViewReslover视图解析器
+	 * 7.ViewReslover解析后返回具体View
+	 * 8.DispatcherServlet对View进行渲染视图（即将模型数据model填充至视图中）并响应数据
 	 */
 	protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception {
 		HttpServletRequest processedRequest = request;

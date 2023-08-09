@@ -2,6 +2,7 @@ package org.bighao.spring.source.analysis.service;
 
 import org.bighao.spring.source.analysis.dao.SourceAnalysisDao;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Service;
 
 /**
