@@ -12,7 +12,7 @@ import org.springframework.context.annotation.*;
 
 /**
  * @version 1.0
- * @author: bighao周启豪
+ * @author: 周启豪
  * @date 2021/1/28 14:59
  *
  * component包说明：
